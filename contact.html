@@ -20,28 +20,26 @@
 
   <main>
     <h2>Contact Me</h2>
-    <p>If you'd like to collaborate, discuss research opportunities, or simply connect, feel free to reach out through the following:</p>
+    <p>If you’d like to discuss research, collaborate, or ask questions, feel free to reach out using the form below:</p>
 
-    <ul>
-      <li><strong>Email:</strong> <a href="mailto:hhimanshu@uh.edu">emaillllll</a></li>
-      <li><strong>Phone (US):</strong> phone</li>
-      <li><strong>GitHub:</strong> <a href="https://github.com/himanshugalgat" target="_blank">github.com/himanshugalgat</a></li>
-      <li><strong>LinkedIn:</strong> <a href="https://linkedin.com/in/your-link" target="_blank">linkedin.com/in/your-link</a></li>
-    </ul>
-    <h2>Contact Me</h2>
     <form action="https://formspree.io/f/mblyrbzg" method="POST">
       <label for="name">Your Name:</label><br />
       <input type="text" name="name" required><br /><br />
-    
+
       <label for="email">Your Email:</label><br />
       <input type="email" name="email" required><br /><br />
-    
-      <label for="message">Message:</label><br />
-      <textarea name="message" rows="5" required></textarea><br /><br />
-    
+
+      <label for="message">Your Message:</label><br />
+      <textarea name="message" rows="6" required></textarea><br /><br />
+
+      <!-- Honeypot anti-spam field -->
+      <input type="text" name="_gotcha" style="display:none">
+
+      <input type="hidden" name="_next" value="https://himanshugalgat.github.io/contact.html?success=true">
+
+
       <button type="submit">Send Message</button>
     </form>
-    <p>Currently based in hhhhh.</p>
   </main>
 
   <footer>
