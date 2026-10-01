@@ -42,6 +42,15 @@ button,input,select,textarea{font:inherit} button{cursor:pointer}
 .status{display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid #edf1f4}.status:last-child{border:0}
 .dot{width:9px;height:9px;border-radius:50%;background:#a5adb5}.dot.ok{background:var(--ok)}.dot.warn{background:var(--warn)}
 .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.properties-card{min-height:520px;padding:22px}
+.properties-card .form-grid{gap:16px}
+.property-section{margin-top:20px;padding-top:18px;border-top:1px solid var(--line)}
+.property-help{margin-top:10px;padding:11px 12px;border-radius:9px;background:#f4f7fa;border:1px solid #dce4eb;color:#55616d;font-size:12px;line-height:1.55}
+.verify-box{padding:14px;border:1px solid var(--line);border-radius:11px;background:#fbfcfd;margin-top:12px}
+.verify-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.verify-chip{display:inline-flex;align-items:center;gap:7px;padding:6px 9px;border-radius:999px;border:1px solid var(--line);font-size:12px;background:#f4f7fa;color:#5b6875}
+.verify-chip.ok{background:#eef8f3;border-color:#bddfce;color:#276d51}
+.verify-chip.warn{background:#fff7e8;border-color:#ecd29f;color:#8a651c}
 .field label{display:block;font-size:12px;font-weight:650;margin-bottom:6px;color:#4d5864}
 .field input,.field select,.field textarea{width:100%;border:1px solid #ccd5df;background:#fbfcfd;border-radius:8px;padding:9px 10px;color:var(--ink);outline:none}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:#7191aa;box-shadow:0 0 0 3px rgba(49,93,127,.1)}
@@ -97,7 +106,7 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
       <section class="page" id="experiments">
         <div class="hero"><div><h2>Procedure Editor</h2><p>Define the exact electrical trajectory before acquisition.</p></div><div><button class="btn">Save procedure</button> <button class="btn primary" onclick="preRun()">Review & Run</button></div></div>
         <div class="grid">
-          <div class="card span5">
+          <div class="card span4">
             <div class="kicker">Procedure</div><h3>Commands</h3>
             <div class="procedure">
               <div class="step"><div class="n">1</div><div><strong>Event Marker</strong><br><small>Baseline</small></div><button class="btn">•••</button></div>
@@ -107,8 +116,8 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
             </div>
             <div class="toolbar" style="margin-top:12px"><button class="btn">+ Sweep</button><button class="btn">+ Hold</button><button class="btn">+ Wait</button><button class="btn">+ Repeat</button></div>
           </div>
-          <div class="card span7">
-            <div class="kicker">Method parameters</div><h3>Voltage-controlled I–V</h3>
+          <div class="card span8 properties-card">
+            <div class="kicker">Command properties</div><h3>Voltage-controlled I–V</h3>
             <div class="form-grid">
               <div class="field"><label>From voltage (V)</label><input id="vFrom" type="number" step="0.1" value="-2"></div>
               <div class="field"><label>To voltage (V)</label><input id="vTo" type="number" step="0.1" value="6"></div>
@@ -118,6 +127,27 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
               <div class="field"><label>Current compliance (A)</label><input type="number" step="0.0001" value="0.001"></div>
               <div class="field"><label>Settling time (s)</label><input type="number" step="0.01" value="0.1"></div>
               <div class="field"><label>NPLC</label><input type="number" step="0.1" value="1"></div>
+            </div>
+            <div class="property-section">
+              <div class="kicker">Keithley output behavior</div>
+              <h3 style="margin-top:6px">Source output control</h3>
+              <div class="form-grid">
+                <div class="field">
+                  <label>Output policy for this command</label>
+                  <select id="outputPolicy">
+                    <option value="auto">Automatic — ON for measurement, OFF after command</option>
+                    <option value="prompt">Prompt — ask before ON and before OFF</option>
+                    <option value="sequence">Sequence managed — keep ON between compatible electrical commands</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Resolved behavior</label>
+                  <input id="resolvedOutput" value="SM1 ON → acquire I–V → SM1 OFF" readonly>
+                </div>
+              </div>
+              <div class="property-help" id="outputHelp">
+                I–V is an active measurement command, so Aristar will enable the selected SourceMeter immediately before acquisition and confirm output OFF when this command finishes. Wait and Operator Prompt commands force the source OFF; Event Marker commands do not change the output state.
+              </div>
             </div>
           </div>
           <div class="card span12">
@@ -165,7 +195,7 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
       </section>
 
       <section class="page" id="instruments">
-        <div class="hero"><div><h2>Instruments</h2><p>Communication configuration is separate from measurement role.</p></div><button class="btn">Test identities</button></div>
+        <div class="hero"><div><h2>Instruments</h2><p>Communication configuration is separate from measurement role. Changing an address, role, or active source invalidates the saved connection verification.</p></div><button class="btn" onclick="invalidateVerification('Instrument configuration changed')">Configuration changed</button></div>
         <div class="grid">
           <div class="card span12"><table class="table"><thead><tr><th>Role</th><th>Instrument</th><th>Address</th><th>Status</th><th>Output</th></tr></thead><tbody>
           <tr><td>SM1</td><td>Keithley 2400 SourceMeter</td><td>GPIB 24</td><td>Ready</td><td>OFF</td></tr>
@@ -178,8 +208,23 @@ footer{color:var(--muted);font-size:12px;margin-top:24px}
       </section>
 
       <section class="page" id="wiring">
-        <div class="hero"><div><h2>Wiring & Setup</h2><p>Sample-holder orientation and sense paths.</p></div><button class="btn">Save wiring profile</button></div>
-        <div class="grid"><div class="card span7"><div class="kicker">Holder</div><h3>Contact map</h3><div class="wiring">
+        <div class="hero"><div><h2>Wiring & Setup</h2><p>Verify once for the active wiring/instrument profile. Aristar reuses that verification for later runs until the configuration changes.</p></div><div><button class="btn" onclick="invalidateVerification('Wiring profile changed')">Profile changed</button> <button class="btn primary" onclick="verifyConnections()">Verify connections</button></div></div>
+        <div class="grid">
+        <div class="card span12">
+          <div class="kicker">Connection verification</div>
+          <h3>Active hardware profile</h3>
+          <div class="verify-box">
+            <div class="verify-row">
+              <div>
+                <strong id="verifyTitle">Not verified</strong><br>
+                <small id="verifyDetail" style="color:var(--muted)">Verify this wiring/instrument profile before the first hardware run.</small>
+              </div>
+              <span class="verify-chip warn" id="verifyChip">VERIFICATION REQUIRED</span>
+            </div>
+          </div>
+          <div class="property-help">Once verified, Aristar will not ask again for every run. Verification is cleared only when the wiring profile, active source, instrument role/address, or other connection-defining setting changes.</div>
+        </div>
+        <div class="card span7"><div class="kicker">Holder</div><h3>Contact map</h3><div class="wiring">
           <div class="terminal"><b>Q</b><small>Upper row</small></div><div class="terminal"><b>U</b><small>Upper row</small></div><div class="terminal"><b>S</b><small>Upper row</small></div><div class="terminal"><b>R</b><small>Upper row</small></div>
           <div class="terminal"><b>P</b><small>Lower row</small></div><div class="terminal"><b>V</b><small>Lower row</small></div><div class="terminal"><b>T</b><small>Lower row</small></div><div class="terminal"><b>W</b><small>Lower row</small></div>
         </div></div><div class="card span5"><div class="kicker">Sense paths</div><h3>Active profile</h3><div class="status"><span class="dot ok"></span><div><strong>SM1</strong><br><small>Q ↔ U source path</small></div></div><div class="status"><span class="dot ok"></span><div><strong>NVM2</strong><br><small>P ↔ T sample sense</small></div></div><div class="status"><span class="dot"></span><div><strong>NVM1</strong><br><small>V ↔ W auxiliary region</small></div></div></div></div>
@@ -236,9 +281,76 @@ document.getElementById('definition').addEventListener('change',e=>{
 });
 updateWave();
 
+const VERIFY_KEY='aristar_v050_connection_verified';
+const VERIFY_TIME_KEY='aristar_v050_connection_verified_at';
+
+function verificationIsValid(){
+  return localStorage.getItem(VERIFY_KEY)==='true';
+}
+function refreshVerificationUI(){
+  const valid=verificationIsValid();
+  const chip=document.getElementById('verifyChip');
+  const title=document.getElementById('verifyTitle');
+  const detail=document.getElementById('verifyDetail');
+  if(!chip||!title||!detail)return;
+  if(valid){
+    const when=localStorage.getItem(VERIFY_TIME_KEY)||'previously';
+    chip.textContent='VERIFIED';
+    chip.className='verify-chip ok';
+    title.textContent='Connections verified';
+    detail.textContent='Valid for this active profile · verified '+when+'. No repeat verification is required for each run.';
+  }else{
+    chip.textContent='VERIFICATION REQUIRED';
+    chip.className='verify-chip warn';
+    title.textContent='Not verified';
+    detail.textContent='Verify this wiring/instrument profile before the first hardware run.';
+  }
+}
+function verifyConnections(){
+  localStorage.setItem(VERIFY_KEY,'true');
+  localStorage.setItem(VERIFY_TIME_KEY,new Date().toLocaleString());
+  refreshVerificationUI();
+  alert('Connection verification saved for the active profile.\n\nAristar will reuse this verification for subsequent runs until the wiring or instrument configuration changes.');
+}
+function invalidateVerification(reason){
+  localStorage.removeItem(VERIFY_KEY);
+  localStorage.removeItem(VERIFY_TIME_KEY);
+  refreshVerificationUI();
+  alert((reason||'Configuration changed')+'.\n\nThe previous connection verification has been cleared. Verify again before the next hardware run.');
+}
+function resolvedOutputText(){
+  const p=document.getElementById('outputPolicy').value;
+  if(p==='prompt')return 'Ask before SM1 ON → acquire I–V → ask before SM1 OFF';
+  if(p==='sequence')return 'SM1 ON for electrical sequence → OFF before Wait/Prompt/End';
+  return 'SM1 ON → acquire I–V → SM1 OFF';
+}
+function updateOutputPolicy(){
+  const txt=resolvedOutputText();
+  document.getElementById('resolvedOutput').value=txt;
+  const p=document.getElementById('outputPolicy').value;
+  document.getElementById('outputHelp').textContent =
+    p==='prompt'
+      ? 'Aristar will pause and ask the operator before it changes the SourceMeter output ON or OFF.'
+      : p==='sequence'
+        ? 'Aristar may keep the source ON between adjacent compatible electrical commands, but it forces output OFF before Wait, Operator Prompt, a safety stop, or the end of the procedure.'
+        : 'I–V is an active measurement command: Aristar enables the selected SourceMeter immediately before acquisition and confirms output OFF when the command finishes.';
+}
+document.getElementById('outputPolicy').addEventListener('change',updateOutputPolicy);
+updateOutputPolicy();
+refreshVerificationUI();
+
 function preRun(){
+  if(!verificationIsValid()){
+    alert('CONNECTION VERIFICATION REQUIRED\n\nThe active wiring/instrument profile has not been verified yet. Aristar will take you to Wiring & Setup.\n\nAfter you verify once, it will remain valid for later runs until the configuration changes.');
+    go('wiring');
+    return;
+  }
   const a=parseFloat(document.getElementById('vFrom').value||0),b=parseFloat(document.getElementById('vTo').value||0);
-  alert('PRE-RUN REVIEW\n\nMethod: Voltage-controlled I–V\nSweep: '+a.toFixed(3)+' V → '+b.toFixed(3)+' V\nSource: SM1\nNVM2: P–T sample sense\n\nBrowser preview only — no hardware output will be enabled.');
+  const policy=document.getElementById('outputPolicy').value;
+  if(policy==='prompt'){
+    if(!confirm('Aristar is ready to request SM1 output ON for the I–V command. Continue?'))return;
+  }
+  alert('PRE-RUN REVIEW\n\nConnections: VERIFIED — reused from active profile\nMethod: Voltage-controlled I–V\nSweep: '+a.toFixed(3)+' V → '+b.toFixed(3)+' V\nSource: SM1\nNVM2: P–T sample sense\nOutput behavior: '+resolvedOutputText()+'\n\nBrowser preview only — no hardware output will be enabled.');
 }
 let timer=null;
 function simulateRun(){
@@ -247,7 +359,8 @@ function simulateRun(){
   document.getElementById('runState').textContent='Demo acquisition running';
   document.getElementById('sm1State').textContent='SIMULATED ON';
   const log=document.getElementById('eventLog');
-  log.textContent='[00:00.000] Procedure started\n[00:00.010] SM1 simulated output ON\n[00:00.020] Voltage sweep started';
+  const policy=document.getElementById('outputPolicy').value;
+  log.textContent='[00:00.000] Procedure started\n[00:00.005] Connection verification reused from active profile\n[00:00.010] SM1 simulated output ON ('+policy+' policy)\n[00:00.020] Voltage sweep started';
   let n=0,pts=[];
   timer=setInterval(()=>{
     n++; const x=70+n*7.4; const y=175-0.75*n+20*Math.sin(n/8);
